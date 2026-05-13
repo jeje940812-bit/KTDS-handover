@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>업무 인수인계 자동화 | KT DS (데모)</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+  :root {
+    --mint:#00BFA5; --mint-dark:#00897B; --accent:#3D53FF;
+    --bg:#F4F5F9; --surface:#FFFFFF; --border:#E2E4EC;
+    --text:#1A1D2E; --sub:#6B7280; --success:#059669; --error:#DC2626;
+    --radius:12px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:5rem;}
+  header{background:var(--mint);color:#fff;height:56px;padding:0 2rem;display:flex;align-items:center;gap:1rem;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,191,165,0.3);}
+  .logo{background:rgba(255,255,255,0.25);border:1px solid rgba(255,255,255,0.4);border-radius:6px;padding:3px 10px;font-size:12px;font-weight:700;}
+  .demo-badge{margin-left:auto;background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.4);border-radius:20px;padding:3px 12px;font-size:11px;}
+  header h1{font-size:15px;font-weight:500;}
+  .tabs{background:var(--surface);border-bottom:1px solid var(--border);display:flex;padding:0 2rem;position:sticky;top:56px;z-index:99;}
+  .tab{height:48px;padding:0 1.25rem;border:none;background:none;font-family:inherit;font-size:14px;color:var(--sub);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;}
+  .tab.on{color:var(--accent);border-bottom-color:var(--accent);font-weight:600;}
+  .wrap{max-width:900px;margin:0 auto;padding:1.5rem;}
+  .panel{display:none;} .panel.on{display:block;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;margin-bottom:1rem;box-shadow:0 2px 8px rgba(0,0,0,0.06);}
+  .card-title{font-size:12px;font-weight:600;color:var(--sub);text-transform:uppercase;letter-spacing:.8px;margin-bottom:1rem;display:flex;align-items:center;gap:6px;}
+  .card-title::before{content:'';width:3px;height:14px;background:var(--mint);border-radius:2px;display:block;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;}
+  .field{display:flex;flex-direction:column;gap:.3rem;}
+  .field label{font-size:12px;font-weight:500;color:var(--sub);}
+  .field input,.field select{font-family:inherit;font-size:14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:.55rem .75rem;outline:none;transition:border-color .2s,box-shadow .2s;}
+  .field input:focus,.field select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(61,83,255,.1);background:#fff;}
+  .type-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;}
+  .type-card{border:2px solid var(--border);border-radius:var(--radius);padding:1rem;cursor:pointer;transition:all .2s;background:var(--bg);user-select:none;}
+  .type-card:hover{border-color:var(--accent);}
+  .type-card.on{border-color:var(--accent);background:#eef0ff;box-shadow:0 0 0 3px rgba(61,83,255,.1);}
+  .type-card.on .type-name{color:var(--accent);}
+  .type-icon{font-size:24px;margin-bottom:.4rem;} .type-name{font-size:14px;font-weight:600;} .type-desc{font-size:12px;color:var(--sub);margin-top:.2rem;line-height:1.4;}
+  .btn{display:inline-flex;align-items:center;gap:.4rem;padding:.65rem 1.4rem;border-radius:8px;border:none;font-family:inherit;font-size:14px;font-weight:500;cursor:pointer;transition:all .2s;}
+  .btn-primary{background:var(--accent);color:#fff;} .btn-primary:hover{background:#2c42e0;box-shadow:0 4px 12px rgba(61,83,255,.35);}
+  .btn-primary:disabled{background:#a0a7d1;cursor:not-allowed;box-shadow:none;}
+  .btn-ghost{background:none;color:var(--sub);border:1px solid var(--border);} .btn-ghost:hover{border-color:var(--accent);color:var(--accent);}
+  .btns{display:flex;gap:.5rem;margin-top:1rem;}
+  .loading{display:none;background:#eef0ff;border:1px solid #c7cdff;border-radius:var(--radius);padding:1.5rem;text-align:center;margin:1rem 0;}
+  .loading.on{display:block;}
+  .spinner{width:32px;height:32px;border:3px solid #c7cdff;border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto .75rem;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .loading-msg{font-size:14px;color:var(--accent);font-weight:500;}
+  .result{display:none;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06);margin-top:1rem;}
+  .result.on{display:block;}
+  .result-bar{background:var(--bg);border-bottom:1px solid var(--border);padding:.75rem 1.25rem;display:flex;align-items:center;gap:.5rem;}
+  .result-label{font-size:12px;font-weight:600;color:var(--sub);margin-right:auto;}
+  .result-body{padding:1.5rem 2rem;font-size:14px;line-height:1.8;min-height:300px;max-height:600px;overflow-y:auto;}
+  .result-body h2{font-size:15px;font-weight:700;color:#003087;border-bottom:2px solid var(--border);padding-bottom:.4rem;margin:1.5rem 0 .75rem;}
+  .result-body h2:first-child{margin-top:0;}
+  .result-body h3{font-size:14px;font-weight:700;color:var(--accent);margin:1rem 0 .5rem;}
+  .result-body h4{font-size:13px;font-weight:700;margin:1rem 0 .4rem;}
+  .result-body table{width:100%;border-collapse:collapse;margin:.5rem 0;font-size:13px;}
+  .result-body th{background:var(--bg);border:1px solid var(--border);padding:.45rem .7rem;font-weight:600;text-align:left;}
+  .result-body td{border:1px solid var(--border);padding:.45rem .7rem;vertical-align:top;}
+  .result-body tr:nth-child(even) td{background:#fafbfc;}
+  .result-body hr{border:none;border-top:1px solid var(--border);margin:1rem 0;}
+  .result-body blockquote{background:#f8f9ff;border-left:3px solid var(--accent);padding:.75rem 1rem;margin:.5rem 0;font-size:13px;color:var(--sub);}
+  .kms-table{width:100%;border-collapse:collapse;margin:.5rem 0;font-size:13px;}
+  .kms-table th{background:var(--bg);border:1px solid var(--border);padding:.45rem .7rem;font-weight:600;text-align:left;}
+  .kms-table td{border:1px solid var(--border);padding:.45rem .7rem;vertical-align:top;}
+  .kms-table tr:nth-child(even) td{background:#fafbfc;}
+  .kms-table td ul,.kms-table td ol{padding-left:1.2rem;margin:0;list-style-position:outside;}
+  .kms-table td li{margin:.15rem 0;display:list-item;}
+  .kms-table td li>p{display:inline;margin:0;}
+  .hist-list{display:flex;flex-direction:column;gap:.6rem;}
+  .hist-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.2rem;display:flex;align-items:center;gap:1rem;cursor:pointer;transition:box-shadow .2s;}
+  .hist-item:hover{box-shadow:0 4px 12px rgba(0,0,0,.08);border-color:var(--accent);}
+  .badge{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;flex-shrink:0;}
+  .b-sec{background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE;}
+  .b-safe{background:#F0FDF4;color:#166534;border:1px solid #BBF7D0;}
+  .b-both{background:#FFF7ED;color:#92400E;border:1px solid #FDE68A;}
+  .hist-info{flex:1;} .hist-name{font-size:14px;font-weight:500;} .hist-meta{font-size:12px;color:var(--sub);margin-top:2px;} .hist-date{font-size:12px;color:var(--sub);}
+  .toast{position:fixed;bottom:5rem;right:1.5rem;background:#1A1D2E;color:#fff;padding:.7rem 1.2rem;border-radius:10px;font-size:13px;font-weight:500;box-shadow:0 4px 20px rgba(0,0,0,.25);z-index:9999;transform:translateY(80px);opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1);}
+  .toast.on{transform:translateY(0);opacity:1;} .toast.ok{background:#064E3B;} .toast.err{background:#7F1D1D;}
+  @media print{
+    header,.tabs,.card:not(#print-area),.btns,.result-bar,.btn,.toast,.loading{display:none !important;}
+    body{background:#fff;padding:0;}
+    .result-body{max-height:none;overflow:visible;padding:0;}
+    .result{display:block !important;border:none;box-shadow:none;}
+    .kms-table{font-size:11px;} h2{font-size:14px;}
+  }
+  @media(max-width:600px){.grid2,.type-grid{grid-template-columns:1fr;}.wrap{padding:1rem;}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">KT DS</div>
+  <h1>업무 인수인계 자동화 시스템</h1>
+  <span class="demo-badge">📋 데모 버전 (KMS 스냅샷 2026.5.13)</span>
+</header>
+
+<div class="tabs">
+  <button class="tab on" onclick="switchTab('gen',this)">📝 인수인계서 생성</button>
+  <button class="tab" onclick="switchTab('hist',this)">📋 이력 조회</button>
+</div>
+
+<!-- 생성 패널 -->
+<div id="panel-gen" class="panel on">
+<div class="wrap">
+  <div class="card">
+    <div class="card-title">인수인계 기본 정보</div>
+    <div class="grid2">
+      <div class="field"><label>인계자 (나가는 담당자)</label><input id="from-name" type="text" placeholder="예) 홍길동" oninput="validate()"></div>
+      <div class="field"><label>인수자 (들어오는 담당자)</label><input id="to-name" type="text" placeholder="예) 김철수" oninput="validate()"></div>
+      <div class="field"><label>인계 시작일</label><input id="date-start" type="date" oninput="validate()"></div>
+      <div class="field"><label>인계 종료일</label><input id="date-end" type="date"></div>
+      <div class="field"><label>소속 부서</label><input id="dept" type="text" placeholder="예) IT인프라운영팀"></div>
+      <div class="field"><label>인계 사유</label>
+        <select id="reason">
+          <option value="">선택하세요</option>
+          <option>인사이동</option><option>퇴직</option><option>휴직</option><option>부서이동</option><option>기타</option>
+        </select>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">인수인계 업무 유형</div>
+    <div class="type-grid">
+      <div class="type-card" id="card-sec" onclick="toggleType('sec')">
+        <div class="type-icon">🔒</div>
+        <div class="type-name">정보보호 업무</div>
+        <div class="type-desc">협력사 FTC 승인, Security Clean DAY, 정보보호 감사 등</div>
+      </div>
+      <div class="type-card" id="card-safe" onclick="toggleType('safe')">
+        <div class="type-icon">🦺</div>
+        <div class="type-name">산업안전보건 업무</div>
+        <div class="type-desc">주차별 순회 점검, 안전보건 교육, 위험성 평가 등</div>
+      </div>
+    </div>
+  </div>
+  <div class="btns">
+    <button class="btn btn-primary" id="btn-gen" onclick="generate()" disabled>✨ AI 인수인계서 생성</button>
+    <button class="btn btn-ghost" onclick="resetForm()">↺ 초기화</button>
+  </div>
+  <div class="loading" id="loading"><div class="spinner"></div><div class="loading-msg" id="loading-msg">잠시만 기다려주세요...</div></div>
+  <div class="result" id="result">
+    <div class="result-bar">
+      <span class="result-label">📄 생성된 인수인계서</span>
+      <button class="btn btn-ghost" onclick="window.print()" style="font-size:12px;padding:.4rem .9rem">🖨 인쇄</button>
+      <button class="btn btn-primary" onclick="savePdf()" style="font-size:12px;padding:.4rem .9rem">📥 PDF 저장</button>
+    </div>
+    <div class="result-body" id="result-body"></div>
+  </div>
+</div>
+</div>
+
+<!-- 이력 패널 -->
+<div id="panel-hist" class="panel">
+<div class="wrap">
+  <div class="card">
+    <div class="card-title">
+      생성 이력
+      <button class="btn btn-ghost" onclick="clearAllHist()" style="font-size:12px;padding:.3rem .8rem;color:#DC2626;border-color:#FCA5A5;margin-left:auto">🗑 전체 삭제</button>
+    </div>
+    <div class="hist-list" id="hist-list">
+      <div style="text-align:center;padding:2rem;color:var(--sub);font-size:14px;">아직 생성된 인수인계서가 없습니다.</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── KMS 스냅샷 데이터 (2026.5.13 기준) ──────────────
+const KMS_SNAPSHOT = {
+  security: `<h3>🔒 정보보호 업무 운영 노트</h3>
+<blockquote>이 페이지는 정보보호 업무의 인수인계 자동화를 위한 업무 운영 노트입니다. 인수인계 발생 시 담당자 히스토리 및 특이사항을 반드시 업데이트해주세요.</blockquote>
+<h4>👤 담당자 히스토리</h4>
+<table class="kms-table"><tr><th>순번</th><th>담당자</th><th>인수일</th><th>인계일</th><th>비고</th></tr>
+<tr><td>1</td><td>김혜인 선임</td><td>-</td><td>2026-02-03</td><td></td></tr>
+<tr><td>2</td><td>김성제 선임</td><td>2026-02-03</td><td>2026-04-22</td><td></td></tr>
+<tr><td>3</td><td>김윤세 책임</td><td>2026-04-22</td><td>-</td><td></td></tr>
+</table>
+<h4>📋 업무 목록</h4>
+<table class="kms-table"><tr><th>업무 ID</th><th>업무명</th><th>업무 유형</th><th>주기</th></tr>
+<tr><td>IS-001</td><td>KT/KTC 협력사 정보보호 관리 및 응대</td><td>정기</td><td>수시</td></tr>
+<tr><td>IS-002</td><td>KT/KTC 협력사 Roll-Off 프로세스 안내 및 업무종료 점검표 관리</td><td>정기</td><td>수시</td></tr>
+<tr><td>IS-003</td><td>분기별 정보보안 Security Clean Day 시행 안내 및 관리</td><td>정기</td><td>분기 1회</td></tr>
+<tr><td>IS-004</td><td>협력사 ZTNA 신청 가이드 안내</td><td>정기</td><td>수시</td></tr>
+<tr><td>IS-005</td><td>협력사 FTC 파일 결재 승인</td><td>정기</td><td>수시</td></tr>
+<tr><td>IS-006</td><td>인수인계 담당자 변경 절차</td><td>정기</td><td>인수인계시</td></tr>
+</table>
+<h4>📌 업무 상세</h4>
+<h4>IS-001. KT/KTC 협력사 정보보호 관리 및 응대</h4>
+<table class="kms-table"><tr><th>항목</th><th>내용</th></tr>
+<tr><td>주기</td><td>수시</td></tr>
+<tr><td>관련 시스템</td><td>IDMS : https://idms.kt.com<br>IDMS 도움말 : https://idms.kt.com/im/</td></tr>
+<tr><td>현재 담당자</td><td>연락처 : 1588-3391 / 이메일 : idms@kt.com</td></tr>
+<tr><td>주의사항</td><td>-</td></tr>
+</table>
+<table class="kms-table"><tr><th>단계</th><th>처리 내용</th></tr>
+<tr><td>1단계</td><td>IDMS → 정보관리 → 담당 협력사 조회 / 정보보호서약서·재직증명서·계정신청서 등재 여부 확인</td></tr>
+<tr><td>2단계</td><td>협력사 보안 관련 요청 사항 검토 및 처리 (KTALK 종료, 아웃룩 보안정책, M365 전환, KT DLP 설치 안내 등)</td></tr>
+<tr><td>3단계</td><td>처리 결과 확인/공유 (계정/권한, IP, 노트북 반입, 보안 SW설치 등)</td></tr>
+</table>
+<h4>IS-002. KT/KTC 협력사 Roll-Off 프로세스 안내 및 업무종료 점검표 요청/보관</h4>
+<table class="kms-table"><tr><th>항목</th><th>내용</th></tr>
+<tr><td>주기</td><td>수시 (Roll-Off 발생 시)</td></tr>
+<tr><td>현재 담당자</td><td>보안정책팀 이광행 책임</td></tr>
+<tr><td>주의사항</td><td>Roll-Off 최소 D-14일 이전에 작성/제출 요청. 미제출 시 보안정책 패널티 적용</td></tr>
+</table>
+<table class="kms-table"><tr><th>단계</th><th>처리 내용</th></tr>
+<tr><td>1단계</td><td>협력사 Roll-Off 발생 확인(최소 D-14일 이전) / IDMS 계정 사용기간 연장여부 확인</td></tr>
+<tr><td>2단계</td><td>대상 협력사/직원에게 Roll-Off 프로세스 안내 (IDMS 계정폐기/IP반납 신청, PC포맷, 데이터 삭제 등)</td></tr>
+<tr><td>3단계</td><td>협력사 업무종료 점검표 작성 요청, 수령/보관 (D-7일 전까지 제출확인 완료)</td></tr>
+</table>
+<h4>IS-003. 분기별 정보보안 Security Clean Day 시행 안내 및 확인</h4>
+<table class="kms-table"><tr><th>항목</th><th>내용</th></tr>
+<tr><td>주기</td><td>분기 1회</td></tr>
+<tr><td>현재 담당자</td><td>보안정책팀 김슬예나 책임</td></tr>
+<tr><td>주의사항</td><td>협력사 및 인프라매니지드팀 공지 필요</td></tr>
+</table>
+<table class="kms-table"><tr><th>단계</th><th>처리 내용</th></tr>
+<tr><td>1단계</td><td>분기별 Security Clean Day 일정 확인</td></tr>
+<tr><td>2단계</td><td>KT/KTC MA 협력사 상주 직원 대상 시행 안내 공지 발송</td></tr>
+<tr><td>3단계</td><td>인프라매니지드팀/협력사 시행 여부 확인 및 결과자료 보관. 취약 항목 조치 후 결과 전송 필수</td></tr>
+</table>
+<h4>IS-004. 협력사 ZTNA 신청 가이드 안내</h4>
+<table class="kms-table"><tr><th>항목</th><th>내용</th></tr>
+<tr><td>주기</td><td>수시 (신청 발생 시)</td></tr>
+<tr><td>관련 시스템</td><td>https://bpmplus.kt.co.kr</td></tr>
+<tr><td>현재 담당자</td><td>인프라코어보안팀 유승민 책임</td></tr>
+</table>
+<table class="kms-table"><tr><th>단계</th><th>처리 내용</th></tr>
+<tr><td>1단계</td><td>협력사 ZTNA 신청 요청 접수</td></tr>
+<tr><td>2단계</td><td>ZTNA 신청 가이드 안내 자료 전달</td></tr>
+<tr><td>3단계</td><td>신청 완료 여부 확인</td></tr>
+</table>
+<h4>IS-005. 협력사 FTC 파일 결재 승인</h4>
+<table class="kms-table"><tr><th>항목</th><th>내용</th></tr>
+<tr><td>주기</td><td>수시 (결재 요청 발생 시)</td></tr>
+<tr><td>관련 시스템</td><td>FTC 승인 : https://pcftc.ktvdi.co.kr:3000/ftc/ / VDI 계정관리 : https://itovdi.ktvdi.co.kr/</td></tr>
+<tr><td>현재 담당자</td><td>운영VDI FTC / itovdiftc.ktcloud@kt.com / 070-5224-1926</td></tr>
+</table>
+<table class="kms-table"><tr><th>단계</th><th>처리 내용</th></tr>
+<tr><td>사전단계</td><td>KT ITSM → VDI 발급신청(단기) → VDI 계정 생성 후 FTC 계정 연동</td></tr>
+<tr><td>1단계</td><td>FTC 접속 → 결재대기함 확인</td></tr>
+<tr><td>2단계</td><td>대상 파일 내용 검토 및 승인 처리</td></tr>
+</table>
+<h4>IS-006. 인수인계 담당자 변경 절차</h4>
+<table class="kms-table"><tr><th>항목</th><th>내용</th></tr>
+<tr><td>주기</td><td>인수인계 시</td></tr>
+<tr><td>관련 시스템</td><td>IDMS 담당자 변경 : https://bpmplus.kt.co.kr / FTC 담당자 변경 : http://itsm.ktds.co.kr/kt</td></tr>
+</table>`,
+
+  safety: `<h3>🦺 산업안전보건 업무 운영 노트</h3>
+<blockquote>이 페이지는 산업안전보건 업무의 인수인계 자동화를 위한 업무 운영 노트입니다. 인수인계 발생 시 담당자 히스토리 및 특이사항을 반드시 업데이트해주세요.</blockquote>
+<h4>👤 담당자 히스토리</h4>
+<table class="kms-table"><tr><th>순번</th><th>담당자</th><th>인수일</th><th>인계일</th><th>비고</th></tr>
+<tr><td>1</td><td>박하늘</td><td>-</td><td>2026-02-03</td><td></td></tr>
+<tr><td>2</td><td>김성제</td><td>2026-02-03</td><td>2026-04-22</td><td></td></tr>
+<tr><td>3</td><td>김윤세</td><td>2026-04-22</td><td>-</td><td></td></tr>
+</table>
+<h4>📋 업무 목록</h4>
+<table class="kms-table"><tr><th>업무 ID</th><th>업무명</th><th>업무 유형</th><th>주기</th></tr>
+<tr><td>SH-001</td><td>순회점검 일지 작성 및 등록</td><td>정기</td><td>매주</td></tr>
+<tr><td>SH-002</td><td>ITO/MA 상면 합동안전보건점검</td><td>정기</td><td>분기 1회</td></tr>
+<tr><td>SH-003</td><td>분당본사타워 월 유료주차 안내</td><td>정기</td><td>매월</td></tr>
+</table>
+<h4>📌 업무 상세</h4>
+<h4>SH-001. 순회점검 일지 작성 및 등록</h4>
+<table class="kms-table"><tr><th>항목</th><th>내용</th></tr>
+<tr><td>주기</td><td>매주</td></tr>
+<tr><td>관련 시스템</td><td>https://ito.kt.co.kr/</td></tr>
+<tr><td>현재 담당자</td><td>사업시너지혁신팀 전지아 선임</td></tr>
+<tr><td>점검 장소</td><td>KT 분당사옥 2층 A존, 11층 A존</td></tr>
+</table>
+<table class="kms-table"><tr><th>단계</th><th>처리 내용</th></tr>
+<tr><td>1단계</td><td>매주 협력사 직원 상주 장소 방문, 육안 점검 (KT 분당사옥 2층 A존, 11층 A존) / 안전·보건 지적사항 발견 시 조치요구</td></tr>
+<tr><td>2단계</td><td>https://ito.kt.co.kr/ → 산업안전보건관리 → 작업장 순회점검 화면으로 이동</td></tr>
+<tr><td>3단계</td><td>순회점검 결과 작성 (점검자·상면구분·점검일시·점검장소·특이사항·16개 상세항목) 후 등록</td></tr>
+</table>
+<h4>SH-002. ITO/MA 상면 합동안전보건점검</h4>
+<table class="kms-table"><tr><th>항목</th><th>내용</th></tr>
+<tr><td>주기</td><td>분기 1회</td></tr>
+<tr><td>현재 담당자</td><td>사업시너지혁신팀 전지아 선임 (전사: 경영지원팀 고세인 책임)</td></tr>
+<tr><td>주의사항</td><td>점검 일정 사전 공지 확인 필요</td></tr>
+</table>
+<table class="kms-table"><tr><th>단계</th><th>처리 내용</th></tr>
+<tr><td>1단계</td><td>ITO/MA 상면 합동안전보건 점검일시 확인 (주관: 경영지원팀 고세인 책임)</td></tr>
+<tr><td>2단계</td><td>KT 분당사옥 2층/11층 A존 방문·점검</td></tr>
+<tr><td>3단계</td><td>지적사항 후속 조치 및 점검 결과 공유</td></tr>
+</table>
+<h4>SH-003. 분당본사타워 월 유료주차 안내</h4>
+<table class="kms-table"><tr><th>항목</th><th>내용</th></tr>
+<tr><td>주기</td><td>월 1회</td></tr>
+<tr><td>현재 담당자</td><td>내부고객만족팀 한금수</td></tr>
+<tr><td>주의사항</td><td>기간 내 미신청·미결제 시 추가 주차 지원 불가 / 요금: 80,000원 (카드만 가능)</td></tr>
+</table>
+<table class="kms-table"><tr><th>단계</th><th>처리 내용</th></tr>
+<tr><td>1단계</td><td>IDMS 등록 협력사에게 매월 KT 분당사옥 유료주차 신청 안내문 전달</td></tr>
+<tr><td>2단계</td><td>협력사 신청 및 결제 여부 확인 (지하 1층 스마트 통합관제센터 내 주차지원실)</td></tr>
+</table>`
+};
+
+// ── 탭 ──
+function switchTab(name, btn) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('on'));
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('on'));
+  document.getElementById('panel-' + name).classList.add('on');
+  btn.classList.add('on');
+}
+
+// ── 업무 유형 ──
+const selected = new Set();
+function toggleType(type) {
+  const card = document.getElementById('card-' + type);
+  if (selected.has(type)) { selected.delete(type); card.classList.remove('on'); }
+  else { selected.add(type); card.classList.add('on'); }
+  validate();
+}
+
+// ── 유효성 ──
+function validate() {
+  const ok = document.getElementById('from-name').value.trim()
+           && document.getElementById('to-name').value.trim()
+           && document.getElementById('date-start').value
+           && selected.size > 0;
+  document.getElementById('btn-gen').disabled = !ok;
+}
+
+// ── 생성 ──
+let docText = '', kmsHtmlData = '';
+
+async function generate() {
+  const fromName  = document.getElementById('from-name').value.trim();
+  const toName    = document.getElementById('to-name').value.trim();
+  const dept      = document.getElementById('dept').value.trim();
+  const dateStart = document.getElementById('date-start').value;
+  const dateEnd   = document.getElementById('date-end').value;
+  const reason    = document.getElementById('reason').value;
+  const typeLabel = [...selected].map(t => t === 'sec' ? '정보보호 업무' : '산업안전보건 업무').join(', ');
+
+  document.getElementById('btn-gen').disabled = true;
+  document.getElementById('result').classList.remove('on');
+  document.getElementById('loading').classList.add('on');
+  document.getElementById('loading-msg').textContent = 'KMS 스냅샷 데이터 로딩 중...';
+
+  await sleep(600);
+
+  // KMS 스냅샷 데이터 조합
+  const parts = [];
+  if (selected.has('sec'))  parts.push(KMS_SNAPSHOT.security);
+  if (selected.has('safe')) parts.push(KMS_SNAPSHOT.safety);
+  kmsHtmlData = parts.join('<hr>');
+
+  // 문서 생성
+  const today = new Date().toLocaleDateString('ko-KR');
+  docText  = '## 1. 인수인계 개요\n\n';
+  docText += '| 항목 | 내용 |\n|------|------|\n';
+  docText += '| 작성일 | ' + today + ' |\n';
+  docText += '| 인계자 | ' + fromName + ' (' + (dept||'-') + ') |\n';
+  docText += '| 인수자 | ' + toName + ' |\n';
+  docText += '| 인계 기간 | ' + dateStart + ' ~ ' + (dateEnd||'미정') + ' |\n';
+  docText += '| 인계 사유 | ' + (reason||'-') + ' |\n';
+  docText += '| 대상 업무 | ' + typeLabel + ' |\n\n---\n\n';
+  docText += '## 2. 업무 내용 (KMS 최신 기준 · ' + today + ')\n\n__KMS_HTML__\n\n---\n\n';
+  docText += '*본 문서는 KT DS 업무 인수인계 자동화 시스템에 의해 생성되었습니다. (' + today + ')*\n\n';
+  docText += '*첨부 문서는 KMS에서 확인 가능합니다.*';
+
+  let finalHtml = mdToHtml(docText);
+  finalHtml = finalHtml.replace('<p style="margin:.15rem 0">__KMS_HTML__</p>', kmsHtmlData);
+  finalHtml = finalHtml.replace('__KMS_HTML__', kmsHtmlData);
+
+  document.getElementById('loading').classList.remove('on');
+  document.getElementById('result-body').innerHTML = finalHtml;
+  document.getElementById('result').classList.add('on');
+  document.getElementById('btn-gen').disabled = false;
+
+  saveHist({ fromName, toName, typeLabel, dateStart, docText, kmsHtmlData });
+  toast('인수인계서 생성 완료!', 'ok');
+}
+
+// ── 마크다운 → HTML ──
+function mdToHtml(md) {
+  if (!md) return '';
+  const lines = md.split('\n');
+  let html = '', inTable = false, tableHtml = '', firstRow = true;
+  for (const line of lines) {
+    if (/^\|[-| :]+\|$/.test(line.trim())) { firstRow = false; continue; }
+    if (line.trim().startsWith('|') && line.trim().endsWith('|')) {
+      if (!inTable) { inTable = true; firstRow = true; tableHtml = '<table>'; }
+      const cells = line.trim().slice(1,-1).split('|').map(c=>c.trim());
+      if (firstRow) { tableHtml += '<tr>'+cells.map(c=>'<th>'+c+'</th>').join('')+'</tr>'; firstRow = false; }
+      else tableHtml += '<tr>'+cells.map(c=>'<td>'+c+'</td>').join('')+'</tr>';
+      continue;
+    }
+    if (inTable) { html += tableHtml+'</table>'; inTable=false; tableHtml=''; firstRow=true; }
+    if (/^#### /.test(line)) html += '<h4>'+line.replace(/^#### /,'')+'</h4>';
+    else if (/^### /.test(line)) html += '<h3>'+line.replace(/^### /,'')+'</h3>';
+    else if (/^## /.test(line)) html += '<h2>'+line.replace(/^## /,'')+'</h2>';
+    else if (/^---$/.test(line.trim())) html += '<hr>';
+    else if (line.trim()==='') html += '<br>';
+    else html += '<p style="margin:.15rem 0">'+line.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')+'</p>';
+  }
+  if (inTable) html += tableHtml+'</table>';
+  return html;
+}
+
+// ── PDF / 인쇄 ──
+function savePdf() {
+  toast('인쇄 창에서 "PDF로 저장" 선택하세요', 'ok');
+  setTimeout(() => window.print(), 500);
+}
+
+// ── 이력 ──
+const HIST_KEY = 'handover_demo_hist_v1';
+function saveHist(item) {
+  let list = [];
+  try { list = JSON.parse(localStorage.getItem(HIST_KEY)||'[]'); } catch {}
+  list.unshift({...item, id:Date.now(), at:new Date().toLocaleString('ko-KR')});
+  localStorage.setItem(HIST_KEY, JSON.stringify(list.slice(0,20)));
+  renderHist();
+}
+function renderHist() {
+  let list = [];
+  try { list = JSON.parse(localStorage.getItem(HIST_KEY)||'[]'); } catch {}
+  const el = document.getElementById('hist-list');
+  if (!list.length) { el.innerHTML='<div style="text-align:center;padding:2rem;color:var(--sub);font-size:14px;">아직 생성된 인수인계서가 없습니다.</div>'; return; }
+  el.innerHTML = list.map(h => {
+    const bc = h.typeLabel.includes('정보보호')&&h.typeLabel.includes('산업안전보건')?'b-both':h.typeLabel.includes('정보보호')?'b-sec':'b-safe';
+    return '<div class="hist-item"><span class="badge '+bc+'" onclick="loadHist('+h.id+')">'+h.typeLabel+'</span>'
+      +'<div class="hist-info" onclick="loadHist('+h.id+')"><div class="hist-name">'+h.fromName+' → '+h.toName+'</div>'
+      +'<div class="hist-meta">인계 시작: '+h.dateStart+'</div></div>'
+      +'<div class="hist-date">'+h.at+'</div>'
+      +'<button onclick="deleteHist('+h.id+')" style="margin-left:.5rem;background:none;border:1px solid #FCA5A5;color:#DC2626;border-radius:6px;padding:.3rem .6rem;font-size:11px;cursor:pointer;flex-shrink:0">🗑</button>'
+      +'</div>';
+  }).join('');
+}
+function loadHist(id) {
+  let list = [];
+  try { list = JSON.parse(localStorage.getItem(HIST_KEY)||'[]'); } catch {}
+  const item = list.find(h=>h.id===id);
+  if (!item) return;
+  docText = item.docText; kmsHtmlData = item.kmsHtmlData || '';
+  let finalHtml = mdToHtml(item.docText);
+  if (kmsHtmlData) {
+    finalHtml = finalHtml.replace('<p style="margin:.15rem 0">__KMS_HTML__</p>', kmsHtmlData);
+    finalHtml = finalHtml.replace('__KMS_HTML__', kmsHtmlData);
+  }
+  document.getElementById('result-body').innerHTML = finalHtml;
+  document.getElementById('result').classList.add('on');
+  switchTab('gen', document.querySelectorAll('.tab')[0]);
+  toast(item.fromName+' → '+item.toName+' 불러오기 완료', 'ok');
+}
+function deleteHist(id) {
+  if (!confirm('이 이력을 삭제할까요?')) return;
+  let list = [];
+  try { list = JSON.parse(localStorage.getItem(HIST_KEY)||'[]'); } catch {}
+  localStorage.setItem(HIST_KEY, JSON.stringify(list.filter(h=>h.id!==id)));
+  renderHist(); toast('삭제됐습니다', 'ok');
+}
+function clearAllHist() {
+  if (!confirm('이력을 모두 삭제할까요?')) return;
+  localStorage.removeItem(HIST_KEY); renderHist(); toast('전체 이력이 삭제됐습니다', 'ok');
+}
+
+// ── 초기화 / 유틸 ──
+function resetForm() {
+  ['from-name','to-name','dept','date-start','date-end'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('reason').value='';
+  selected.clear();
+  document.getElementById('card-sec').classList.remove('on');
+  document.getElementById('card-safe').classList.remove('on');
+  document.getElementById('result').classList.remove('on');
+  document.getElementById('loading').classList.remove('on');
+  document.getElementById('btn-gen').disabled=true;
+}
+let toastTimer;
+function toast(msg, type) {
+  const el = document.getElementById('toast');
+  el.textContent = type==='ok'?'✅ '+msg:type==='err'?'❌ '+msg:'⏳ '+msg;
+  el.className = 'toast on'+(type?' '+type:'');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>el.classList.remove('on'), 3500);
+}
+function sleep(ms) { return new Promise(r=>setTimeout(r,ms)); }
+
+window.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('date-start').value = new Date().toISOString().split('T')[0];
+  renderHist();
+});
+</script>
+
+<!-- AI:ON-U 챗봇 -->
+<script>
+  window.aionChatbotConfig = {
+    token: 'BhYhaz1NRR4rFodR', isDev: true,
+    baseUrl: 'https://studio.abclab.ktds.com',
+    isOpen: false, isStartButtonShow: false,
+    bgcolor: '#3D53FF', iconSize: '100%',
+    totalIconSize: '3rem', totalBorderRadius: '1.5rem',
+    bottom: '1rem', right: '1rem',
+    chatBottom: '5rem', chatRight: '1rem',
+    zoom: 1.0, input: { userName: '' }
+  };
+</script>
+<script src="https://studio.abclab.ktds.com/embed.min.js" id="BhYhaz1NRR4rFodR" defer></script>
+
+</body>
+</html>
