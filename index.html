@@ -79,27 +79,78 @@
   .hist-info{flex:1;} .hist-name{font-size:14px;font-weight:500;} .hist-meta{font-size:12px;color:var(--sub);margin-top:2px;} .hist-date{font-size:12px;color:var(--sub);}
   .toast{position:fixed;bottom:5rem;right:1.5rem;background:#1A1D2E;color:#fff;padding:.7rem 1.2rem;border-radius:10px;font-size:13px;font-weight:500;box-shadow:0 4px 20px rgba(0,0,0,.25);z-index:9999;transform:translateY(80px);opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1);}
   .toast.on{transform:translateY(0);opacity:1;} .toast.ok{background:#064E3B;} .toast.err{background:#7F1D1D;}
+  /* ── 모바일 최적화 ── */
+  @media(max-width:768px){
+    /* 헤더 */
+    header{height:48px;padding:0 1rem;}
+    header h1{font-size:13px;}
+    .demo-badge{font-size:10px;padding:2px 8px;}
+    .logo{font-size:11px;padding:2px 7px;}
+
+    /* 탭 */
+    .tabs{padding:0;} 
+    .tab{flex:1;font-size:13px;padding:0 .5rem;justify-content:center;}
+
+    /* 컨테이너 */
+    .wrap{padding:.75rem;}
+    .card{padding:1rem;margin-bottom:.75rem;}
+
+    /* 폼 그리드 → 1열 */
+    .grid2{grid-template-columns:1fr;}
+    .field input,.field select{font-size:16px;padding:.6rem .75rem;} /* 16px: iOS 줌 방지 */
+
+    /* 업무 유형 카드 → 1열 */
+    .type-grid{grid-template-columns:1fr;}
+    .type-card{display:flex;align-items:center;gap:.75rem;padding:.75rem 1rem;}
+    .type-icon{font-size:28px;margin-bottom:0;flex-shrink:0;}
+    .type-name{font-size:15px;}
+    .type-desc{font-size:12px;}
+
+    /* 버튼 */
+    .btns{flex-direction:column;}
+    .btn{width:100%;justify-content:center;padding:.75rem;font-size:15px;}
+    #btn-gen{font-size:16px;padding:.85rem;}
+
+    /* 결과 영역 */
+    .result-bar{flex-wrap:wrap;gap:.4rem;padding:.6rem .75rem;}
+    .result-label{width:100%;margin-bottom:.2rem;}
+    .result-bar .btn{flex:1;font-size:13px;padding:.45rem .5rem;}
+    .result-body{padding:1rem;max-height:none;font-size:13px;}
+
+    /* 표 모바일 대응 */
+    .result-body table,.kms-table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;white-space:nowrap;}
+    .result-body th,.result-body td,.kms-table th,.kms-table td{white-space:normal;min-width:80px;font-size:12px;padding:.35rem .5rem;}
+
+    /* 이력 */
+    .hist-item{flex-wrap:wrap;gap:.5rem;padding:.75rem;}
+    .hist-date{width:100%;font-size:11px;}
+
+    /* 토스트 */
+    .toast{left:1rem;right:1rem;text-align:center;}
+  }
+
+  /* 인쇄 스타일 */
   @media print{
     header,.tabs,.card:not(#print-area),.btns,.result-bar,.btn,.toast,.loading{display:none !important;}
     body{background:#fff;padding:0;}
     .result-body{max-height:none;overflow:visible;padding:0;}
     .result{display:block !important;border:none;box-shadow:none;}
+    .result-body table,.kms-table{display:table;white-space:normal;}
     .kms-table{font-size:11px;} h2{font-size:14px;}
   }
-  @media(max-width:600px){.grid2,.type-grid{grid-template-columns:1fr;}.wrap{padding:1rem;}}
 </style>
 </head>
 <body>
 
 <header>
   <div class="logo">KT DS</div>
-  <h1>업무 인수인계 자동화 시스템</h1>
+  <h1>업무 인수인계 자동화</h1>
   <span class="demo-badge">📋 데모 버전 (KMS 스냅샷 2026.5.13)</span>
 </header>
 
 <div class="tabs">
-  <button class="tab on" onclick="switchTab('gen',this)">📝 인수인계서 생성</button>
-  <button class="tab" onclick="switchTab('hist',this)">📋 이력 조회</button>
+  <button class="tab on" onclick="switchTab('gen',this)">📝 생성</button>
+  <button class="tab" onclick="switchTab('hist',this)">📋 이력</button>
 </div>
 
 <!-- 생성 패널 -->
@@ -137,7 +188,7 @@
     </div>
   </div>
   <div class="btns">
-    <button class="btn btn-primary" id="btn-gen" onclick="generate()" disabled>✨ AI 인수인계서 생성</button>
+    <button class="btn btn-primary" id="btn-gen" onclick="generate()" disabled style="flex:1">✨ AI 인수인계서 생성</button>
     <button class="btn btn-ghost" onclick="resetForm()">↺ 초기화</button>
   </div>
   <div class="loading" id="loading"><div class="spinner"></div><div class="loading-msg" id="loading-msg">잠시만 기다려주세요...</div></div>
